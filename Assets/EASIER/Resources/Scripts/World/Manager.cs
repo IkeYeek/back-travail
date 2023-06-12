@@ -48,15 +48,13 @@ namespace EASIER.Resources.Scripts.World
                     SceneManager.UnloadSceneAsync(_scene.Value);
                 }
 
-                var originalScene = SceneManager.GetActiveScene();
+                var rootScene = SceneManager.GetActiveScene();
                 _scene = SceneManager.CreateScene($"{currentSceneFromArchive.name} (#{currentSceneFromArchive.id})");
                 SceneManager.SetActiveScene(_scene.Value);
-                
-                
                 //TODO try to optimize by lazy-loading objects and then cache them in the DontDestroyOnLoad
                 _sceneObjects = currentSceneFromArchive.objects.ToList();
                 _sceneGameObjects = _sceneObjects.ConvertAll(_createGameObject);
-                SceneManager.SetActiveScene(originalScene);
+                SceneManager.SetActiveScene(rootScene);
             }
             else
             {
