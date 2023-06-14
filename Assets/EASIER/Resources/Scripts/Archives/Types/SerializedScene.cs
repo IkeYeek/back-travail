@@ -8,5 +8,6 @@ namespace EASIER.Resources.Scripts.Archives.Types
         public string id { get; set; }
         public string name { get; set; }
         public SerializedSceneObject[] objects { get; set; }
+        public SerializedSceneText[] texts { get; set; }
     }
 }

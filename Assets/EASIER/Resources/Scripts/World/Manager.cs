@@ -20,8 +20,10 @@ namespace EASIER.Resources.Scripts.World
         private Scene? _scene = null;
         private List<SerializedSceneObject> _sceneObjects;
         private List<GameObject> _sceneGameObjects;
-
+        private List<SerializedSceneText> _sceneTexts;
+        private List<GameObject> _sceneTextGameObjects;
         private Material _simpleImageMaterial;
+        private GameObmdject _simpleTextPrefab;
 
         private void Start()
         {
@@ -30,12 +32,11 @@ namespace EASIER.Resources.Scripts.World
             {
                 throw new NoSceneInArchive();
             }
-            LoadCurrentScene();
             _simpleImageMaterial = UnityEngine.Resources.Load<Material>("Materials/SimpleImageMaterial");
-            if (ReferenceEquals(_simpleImageMaterial, null))
-            {
-                throw new EASIERCore("Couldn't find SimpleImageMaterial");
-            }
+            if (ReferenceEquals(_simpleImageMaterial, null)) throw new EASIERCore("Couldn't find SimpleImageMaterial");
+            _simpleTextPrefab = UnityEngine.Resources.Load<GameObject>("Prefabs/SimpleTextPrefab");
+            if (ReferenceEquals(_simpleTextPrefab, null)) throw new EASIERCore("Couldn't find SimpleTextPrefab");
+            LoadCurrentScene();
         }
 
         public void LoadCurrentScene()
@@ -54,6 +55,10 @@ namespace EASIER.Resources.Scripts.World
                 //TODO try to optimize by lazy-loading objects and then cache them in the DontDestroyOnLoad
                 _sceneObjects = currentSceneFromArchive.objects.ToList();
                 _sceneGameObjects = _sceneObjects.ConvertAll(_createGameObject);
+
+                _sceneTexts = currentSceneFromArchive.texts.ToList();
+                _sceneTextGameObjects = _sceneTexts.ConvertAll(_createSceneTextGO);
+
                 SceneManager.SetActiveScene(rootScene);
             }
             else
@@ -61,6 +66,16 @@ namespace EASIER.Resources.Scripts.World
                 throw new IndexOutOfRangeException(
                     $"Cannot load scene of index {_currentScene}. Scene index must be between 0 and {_archive.SerializedScenes.Length} - 1");
             }
+        }
+
+        private GameObject _createSceneTextGO(SerializedSceneText input)
+        {
+            var go = Instantiate(_simpleTextPrefab);
+            go.transform.position = new Vector3(input.transform.position.X, input.transform.position.Y,
+                input.transform.position.Z);
+            var simpleTextComponent = go.GetComponent<SimpleText>();
+            simpleTextComponent.Text = input.content;
+            return go;
         }
 
         public void GoToNextScene()
@@ -171,7 +186,7 @@ namespace EASIER.Resources.Scripts.World
             go.name = $"Object #{modelObj.id} - File: {modelObj.file.name} #{modelObj.file.id}";
             var goTransform = go.transform;
             goTransform.position = _unserializeVector3(modelObj.transform.position);
-            goTransform.localScale = new Vector3(1, 1, 1);
+            goTransform.localScale = _unserializeVector3(modelObj.transform.size);
             return go;
         }
 
