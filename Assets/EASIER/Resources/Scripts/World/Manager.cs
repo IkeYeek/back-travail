@@ -8,6 +8,7 @@ using EASIER.Resources.Scripts.Exceptions;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
+using UnityEngine.XR.Interaction.Toolkit;
 
 namespace EASIER.Resources.Scripts.World
 {
@@ -23,7 +24,7 @@ namespace EASIER.Resources.Scripts.World
         private List<SerializedSceneText> _sceneTexts;
         private List<GameObject> _sceneTextGameObjects;
         private Material _simpleImageMaterial;
-        private GameObmdject _simpleTextPrefab;
+        private GameObject _simpleTextPrefab;
 
         private void Start()
         {
@@ -54,7 +55,7 @@ namespace EASIER.Resources.Scripts.World
                 SceneManager.SetActiveScene(_scene.Value);
                 //TODO try to optimize by lazy-loading objects and then cache them in the DontDestroyOnLoad
                 _sceneObjects = currentSceneFromArchive.objects.ToList();
-                _sceneGameObjects = _sceneObjects.ConvertAll(_createGameObject);
+                _sceneGameObjects = _sceneObjects.ConvertAll(_createGOFromSceneObject);
 
                 _sceneTexts = currentSceneFromArchive.texts.ToList();
                 _sceneTextGameObjects = _sceneTexts.ConvertAll(_createSceneTextGO);
@@ -108,7 +109,7 @@ namespace EASIER.Resources.Scripts.World
             }
         }
         
-        private GameObject _createGameObject(SerializedSceneObject obj)
+        private GameObject _createGOFromSceneObject(SerializedSceneObject obj)
         {
             var go = obj.file.type switch
             {
@@ -121,7 +122,7 @@ namespace EASIER.Resources.Scripts.World
                 "Model" => _createModelGO(obj),
                 _ => throw new UnknownSceneObjectType(obj.file.type)
             };
-
+            applyParametersToGO(go, obj);
             return go;
         }
 
@@ -188,6 +189,28 @@ namespace EASIER.Resources.Scripts.World
             goTransform.position = _unserializeVector3(modelObj.transform.position);
             goTransform.localScale = _unserializeVector3(modelObj.transform.size);
             return go;
+        }
+
+        private void applyParametersToGO(GameObject go, SerializedSceneObject src)
+        {
+            if (src.stuckToPlane)
+            {
+                var mask = new Vector3(1, 0, 1);
+                go.transform.position = Vector3.Scale(go.transform.position, mask);
+            }
+
+            if (src.grabbable)
+            {
+                go.AddComponent<XRGrabInteractable>();
+                if (src.placeholder)
+                {
+                    //TODO placeholder
+                }
+                if (src.showWhenHover)
+                {
+                    //TODO showwhenhover
+                }
+            }
         }
 
         private static Vector3 _unserializeVector3(SerializedSceneObject.SerializedVector3 v3) => new Vector3(v3.X, v3.Y, v3.Z);
